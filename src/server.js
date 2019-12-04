@@ -4,10 +4,35 @@ const url = require('url');
 const User = require('./database/schema');
 const querystring = require('querystring');
 const HttpResponseText = require('./utils/response');
-
-const mongoose = require('mongoose');
 const GenerateUuid = require('./utils/uuid');
+const MongoClient = require('mongodb').MongoClient;
+const dbUrl = 'mongodb://localhost:27017';
 
+async function query(res) {
+    const client = await MongoClient.connect(dbUrl, { useNewUrlParser: true })
+        .catch(err => { console.log(err); });
+
+    if (!client) {
+        return;
+    }
+
+    try {
+
+        const db = client.db("nodedb");
+
+        let collection = db.collection('users');
+
+        // 返回promise
+        const result = await collection.find({}).toArray();
+        return result;
+    } catch (err) {
+
+        console.log(err);
+    } finally {
+
+        client.close();
+    }
+}
 // 创建一个HTTP服务器R
 http.createServer((req, res) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -18,46 +43,16 @@ http.createServer((req, res) => {
     // 获取请求路径  不同接口
     const reqUrl = req.url;
     if (reqUrl === '/query') {
-        mongoose.connect('mongodb://localhost:27017/nodedb').then(
-           async (mongoose)=>{
-            let Schema = mongoose.Schema;
-             const user =  mongoose.model('User',new Schema({
-                id: { type: String },
-                name: { type: String },
-                password: { type: String },
-            }));
-            await user.find({});
-           }).then((err, result) => {
-            if (err) {
-                res.write(err);
+        query().then(result => {
+            let responseEntity;
+            if (!result) {
+                responseEntity = new HttpResponseText('ERROR', '数据返回异常，问一下数据库管理员吧', '');
+            } else {
+                responseEntity = new HttpResponseText('SUCCESS', '获取数据成功', result || []);
             }
-            else {
-                let responseEntity;
-                if (!result) {
-                    responseEntity = new HttpResponseText('ERROR', '数据返回异常，问一下数据库管理员吧', '');
-                } else {
-                    responseEntity = new HttpResponseText('SUCCESS', '获取数据成功', result || []);
-                }
-                res.write(JSON.stringify(responseEntity));
-            }
+            res.write(JSON.stringify(responseEntity));
             res.end();
         });
-        // 查询数据
-        // User.find({}, (err, result) => {
-        //     if (err) {
-        //         res.write(err);
-        //     }
-        //     else {
-        //         let responseEntity;
-        //         if (!result) {
-        //             responseEntity = new HttpResponseText('ERROR', '数据返回异常，问一下数据库管理员吧', '');
-        //         } else {
-        //             responseEntity = new HttpResponseText('SUCCESS', '获取数据成功', result || []);
-        //         }
-        //         res.write(JSON.stringify(responseEntity));
-        //     }
-        //     res.end();
-        // });
     } else if (reqUrl === '/insert') {
         // 插入数据
         let putData = '';
@@ -152,18 +147,18 @@ http.createServer((req, res) => {
 
 
 
-async function insertData(){
+async function insertData() {
     await onData();
     await endData();
     return `完成插入数据`;
 }
 
 
-function onData(){
+function onData() {
     return new Promise();
 }
 
-function endData(){
+function endData() {
     return new Promise();
 }
 
