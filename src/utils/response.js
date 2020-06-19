@@ -1,6 +1,6 @@
 /* 构造响应体 */
 
-function HttpResponseText(status, message,data) {
+function HttpResponseText(status, message, data) {
     this.status = status;
     this.message = message;
     this.data = data;

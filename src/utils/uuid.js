@@ -1,6 +1,6 @@
 function GenerateUuid() {
     const time = new Date();
-    return time.getTime();
+    return time.getTime().toString();
 }
 
 module.exports = GenerateUuid;
